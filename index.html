@@ -735,12 +735,11 @@
                 const usersCollection = collection(db, "users");
                 const snapshot = await getCountFromServer(usersCollection);
                 const count = snapshot.data().count;
-                // We keep a starting base of 1240 + real database count to keep the statistics impressive:
-                const baseCount = 1240 + count;
-                document.getElementById('playerCount').innerText = formatNumber(baseCount) + "+";
+                // Show only real registered user count
+                document.getElementById('playerCount').innerText = formatNumber(count) + "+";
             } catch (error) {
                 console.error("Error fetching player count:", error);
-                document.getElementById('playerCount').innerText = "1,240+"; // Fallback
+                document.getElementById('playerCount').innerText = "0+"; // Fallback
             }
 
             // Fetch Recent Reviews
