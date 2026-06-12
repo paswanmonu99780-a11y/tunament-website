@@ -565,7 +565,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, increment, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, setDoc, increment, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDryf9Gtq0WpKObkZg9c1rD9geIrYDpLro",
@@ -644,9 +644,10 @@
         window.trackDownload = async (arch) => {
             try {
                 const configRef = doc(db, "settings", "app_config");
-                await updateDoc(configRef, {
+                // Use setDoc with merge:true so it creates the field if it doesn't exist
+                await setDoc(configRef, {
                     downloadCount: increment(1)
-                });
+                }, { merge: true });
                 await addDoc(collection(db, "download_logs"), {
                     architecture: arch || 'unknown',
                     timestamp: serverTimestamp(),
@@ -716,51 +717,55 @@
         async function fetchLiveData() {
             const configRef = doc(db, "settings", "app_config");
 
-            // Set default values immediately so "..." never stays
+            // Set safe default values immediately so "..." never stays
             document.getElementById('totalWinnings').innerText = "₹0+";
-            document.getElementById('appRating').innerText = "4.8/5";
+            document.getElementById('appRating').innerText = "N/A";
             document.getElementById('downloadCount').innerText = "0+";
+            document.getElementById('playerCount').innerText = "0+";
 
+            // --- Live config data (winnings, downloads, rating) ---
             onSnapshot(configRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const fields = docSnap.data();
                     apkData = fields;
 
-                    // Use !== undefined so even 0 value gets displayed
-                    document.getElementById('totalWinnings').innerText = 
+                    document.getElementById('totalWinnings').innerText =
                         "₹" + formatNumber(fields.totalWinnings !== undefined ? fields.totalWinnings : 0) + "+";
-                    document.getElementById('appRating').innerText = 
-                        (fields.appRating !== undefined ? fields.appRating : "4.8") + "/5";
-                    document.getElementById('downloadCount').innerText = 
+
+                    // Only show rating if it was set by real reviews
+                    if (fields.appRating !== undefined && fields.ratingCount > 0) {
+                        document.getElementById('appRating').innerText = parseFloat(fields.appRating).toFixed(1) + "/5";
+                    } else {
+                        document.getElementById('appRating').innerText = "N/A";
+                    }
+
+                    document.getElementById('downloadCount').innerText =
                         formatNumber(fields.downloadCount !== undefined ? fields.downloadCount : 0) + "+";
 
                     if (fields.youtubeUrl) document.getElementById('ytLink').href = fields.youtubeUrl;
                     if (fields.instagramUrl) document.getElementById('instaLink').href = fields.instagramUrl;
                     if (fields.telegramUrl) document.getElementById('teleLink').href = fields.telegramUrl;
                     if (fields.whatsappUrl) document.getElementById('waLink').href = fields.whatsappUrl;
-                } else {
-                    // Document doesn't exist — show safe defaults
-                    document.getElementById('totalWinnings').innerText = "₹0+";
-                    document.getElementById('appRating').innerText = "4.8/5";
-                    document.getElementById('downloadCount').innerText = "0+";
                 }
             }, (error) => {
-                console.error("Firestore onSnapshot error:", error);
-                document.getElementById('totalWinnings').innerText = "₹0+";
-                document.getElementById('appRating').innerText = "4.8/5";
-                document.getElementById('downloadCount').innerText = "0+";
+                console.error("Firestore config error:", error);
             });
 
-            // Fetch Real-time Total Registered Users count
+            // --- Real-time Player Count using onSnapshot (works with security rules) ---
             try {
-                const usersCollection = collection(db, "users");
-                const snapshot = await getCountFromServer(usersCollection);
-                const count = snapshot.data().count;
-                // Show only real registered user count
-                document.getElementById('playerCount').innerText = formatNumber(count) + "+";
+                onSnapshot(collection(db, "users"), (snapshot) => {
+                    document.getElementById('playerCount').innerText = formatNumber(snapshot.size) + "+";
+                }, (error) => {
+                    // If security rules block collection read, use getCountFromServer as fallback
+                    getCountFromServer(collection(db, "users")).then((snap) => {
+                        document.getElementById('playerCount').innerText = formatNumber(snap.data().count) + "+";
+                    }).catch(() => {
+                        document.getElementById('playerCount').innerText = "0+";
+                    });
+                });
             } catch (error) {
                 console.error("Error fetching player count:", error);
-                document.getElementById('playerCount').innerText = "0+"; // Fallback
+                document.getElementById('playerCount').innerText = "0+";
             }
 
             // Fetch Recent Reviews
