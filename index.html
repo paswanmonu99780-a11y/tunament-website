@@ -565,7 +565,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc, increment, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, increment, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDryf9Gtq0WpKObkZg9c1rD9geIrYDpLro",
@@ -713,7 +713,7 @@
             }
         };
 
-        function fetchLiveData() {
+        async function fetchLiveData() {
             const configRef = doc(db, "settings", "app_config");
             onSnapshot(configRef, (docSnap) => {
                 if (docSnap.exists()) {
@@ -727,9 +727,21 @@
                     if (fields.instagramUrl) document.getElementById('instaLink').href = fields.instagramUrl;
                     if (fields.telegramUrl) document.getElementById('teleLink').href = fields.telegramUrl;
                     if (fields.whatsappUrl) document.getElementById('waLink').href = fields.whatsappUrl;
-                    document.getElementById('playerCount').innerText = formatNumber(fields.playerCount || "1240") + "+";
                 }
             });
+
+            // Fetch Real-time Total Registered Users count
+            try {
+                const usersCollection = collection(db, "users");
+                const snapshot = await getCountFromServer(usersCollection);
+                const count = snapshot.data().count;
+                // We keep a starting base of 1240 + real database count to keep the statistics impressive:
+                const baseCount = 1240 + count;
+                document.getElementById('playerCount').innerText = formatNumber(baseCount) + "+";
+            } catch (error) {
+                console.error("Error fetching player count:", error);
+                document.getElementById('playerCount').innerText = "1,240+"; // Fallback
+            }
 
             // Fetch Recent Reviews
             const reviewsQuery = query(collection(db, "website_reviews"), orderBy("timestamp", "desc"), limit(6));
