@@ -715,19 +715,40 @@
 
         async function fetchLiveData() {
             const configRef = doc(db, "settings", "app_config");
+
+            // Set default values immediately so "..." never stays
+            document.getElementById('totalWinnings').innerText = "₹0+";
+            document.getElementById('appRating').innerText = "4.8/5";
+            document.getElementById('downloadCount').innerText = "0+";
+
             onSnapshot(configRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const fields = docSnap.data();
                     apkData = fields;
-                    if (fields.totalWinnings) document.getElementById('totalWinnings').innerText = "₹" + formatNumber(fields.totalWinnings) + "+";
-                    if (fields.appRating) document.getElementById('appRating').innerText = fields.appRating + "/5";
-                    if (fields.downloadCount) document.getElementById('downloadCount').innerText = formatNumber(fields.downloadCount) + "+";
-                    
+
+                    // Use !== undefined so even 0 value gets displayed
+                    document.getElementById('totalWinnings').innerText = 
+                        "₹" + formatNumber(fields.totalWinnings !== undefined ? fields.totalWinnings : 0) + "+";
+                    document.getElementById('appRating').innerText = 
+                        (fields.appRating !== undefined ? fields.appRating : "4.8") + "/5";
+                    document.getElementById('downloadCount').innerText = 
+                        formatNumber(fields.downloadCount !== undefined ? fields.downloadCount : 0) + "+";
+
                     if (fields.youtubeUrl) document.getElementById('ytLink').href = fields.youtubeUrl;
                     if (fields.instagramUrl) document.getElementById('instaLink').href = fields.instagramUrl;
                     if (fields.telegramUrl) document.getElementById('teleLink').href = fields.telegramUrl;
                     if (fields.whatsappUrl) document.getElementById('waLink').href = fields.whatsappUrl;
+                } else {
+                    // Document doesn't exist — show safe defaults
+                    document.getElementById('totalWinnings').innerText = "₹0+";
+                    document.getElementById('appRating').innerText = "4.8/5";
+                    document.getElementById('downloadCount').innerText = "0+";
                 }
+            }, (error) => {
+                console.error("Firestore onSnapshot error:", error);
+                document.getElementById('totalWinnings').innerText = "₹0+";
+                document.getElementById('appRating').innerText = "4.8/5";
+                document.getElementById('downloadCount').innerText = "0+";
             });
 
             // Fetch Real-time Total Registered Users count
