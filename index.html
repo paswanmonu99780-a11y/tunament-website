@@ -463,8 +463,8 @@
 
         <div class="stats">
             <div class="stat-item">
-                <h3 id="playerCount">...</h3>
-                <p>Players</p>
+                <h3 id="visitorCount">...</h3>
+                <p>Visits</p>
             </div>
             <div class="stat-item">
                 <h3 id="downloadCount">...</h3>
@@ -688,21 +688,7 @@
                     timestamp: serverTimestamp()
                 });
 
-                // Update Average Rating in app_config (Simple logic: update total ratings and average)
-                const configRef = doc(db, "settings", "app_config");
-                const docSnap = await getDoc(configRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const currentTotal = data.ratingCount || 100; // default 100 to keep it realistic
-                    const currentAvg = parseFloat(data.appRating || "4.8");
-                    const newTotal = currentTotal + 1;
-                    const newAvg = ((currentAvg * currentTotal) + selectedRating) / newTotal;
-
-                    await updateDoc(configRef, {
-                        ratingCount: newTotal,
-                        appRating: newAvg.toFixed(1).toString()
-                    });
-                }
+                // Average rating is calculated automatically in real-time from reviews collection!
 
                 alert("Thank you for your review!");
                 document.getElementById('reviewerName').value = "";
@@ -730,36 +716,47 @@
                 console.error("Error incrementing visitCount:", e);
             }
 
-            // Set safe default values immediately so "..." never stays
+            // Set safe default values immediately
             document.getElementById('totalWinnings').innerText = "₹0+";
             document.getElementById('appRating').innerText = "N/A";
             document.getElementById('downloadCount').innerText = "0+";
-            document.getElementById('playerCount').innerText = "0+";
+            document.getElementById('visitorCount').innerText = "0+";
+            document.getElementById('visitCount').innerText = "0+";
 
-            // --- Live config data (winnings, downloads, rating, players) ---
+            // Track unique visitor
+            if (!localStorage.getItem('arenabattletv_visitor')) {
+                const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+                localStorage.setItem('arenabattletv_visitor', uniqueId);
+                try {
+                    await setDoc(configRef, {
+                        visitorCount: increment(1)
+                    }, { merge: true });
+                } catch (e) {
+                    console.error("Error updating visitor count:", e);
+                }
+            }
+
+            // --- Live config data (winnings, downloads, visitors) ---
             onSnapshot(configRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const fields = docSnap.data();
                     apkData = fields;
 
+                    const winnings = (fields.totalWinnings !== undefined && fields.totalWinnings !== null) ? fields.totalWinnings : 0;
                     document.getElementById('totalWinnings').innerText =
-                        "₹" + formatNumber(fields.totalWinnings !== undefined ? fields.totalWinnings : 0) + "+";
+                        "\u20b9" + formatNumber(winnings) + "+";
 
-                    // Only show rating if it was set by real reviews
-                    if (fields.appRating !== undefined && fields.ratingCount > 0) {
-                        document.getElementById('appRating').innerText = parseFloat(fields.appRating).toFixed(1) + "/5";
-                    } else {
-                        document.getElementById('appRating').innerText = "N/A";
-                    }
-
+                    const downloads = (fields.downloadCount !== undefined && fields.downloadCount !== null) ? fields.downloadCount : 0;
                     document.getElementById('downloadCount').innerText =
-                        formatNumber(fields.downloadCount !== undefined ? fields.downloadCount : 0) + "+";
+                        formatNumber(downloads) + "+";
 
+                    const visitors = (fields.visitorCount !== undefined && fields.visitorCount !== null) ? fields.visitorCount : 0;
+                    document.getElementById('visitorCount').innerText =
+                        formatNumber(visitors) + "+";
+
+                    const visits = (fields.visitCount !== undefined && fields.visitCount !== null) ? fields.visitCount : 0;
                     document.getElementById('visitCount').innerText =
-                        formatNumber(fields.visitCount !== undefined ? fields.visitCount : 0) + "+";
-
-                    document.getElementById('playerCount').innerText =
-                        formatNumber(fields.playerCount !== undefined ? fields.playerCount : 0) + "+";
+                        formatNumber(visits) + "+";
 
                     if (fields.youtubeUrl) document.getElementById('ytLink').href = fields.youtubeUrl;
                     if (fields.instagramUrl) document.getElementById('instaLink').href = fields.instagramUrl;
@@ -768,6 +765,23 @@
                 }
             }, (error) => {
                 console.error("Firestore config error:", error);
+            });
+
+            // Calculate real-time average rating from website_reviews
+            onSnapshot(collection(db, "website_reviews"), (snapshot) => {
+                let totalRating = 0;
+                let count = 0;
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    if (r.rating) {
+                        totalRating += r.rating;
+                        count++;
+                    }
+                });
+                const avgRating = count > 0 ? (totalRating / count).toFixed(1) : "4.8";
+                document.getElementById('appRating').innerText = avgRating + "/5";
+            }, (error) => {
+                console.error("Firestore reviews rating error:", error);
             });
 
             // Fetch Recent Reviews
