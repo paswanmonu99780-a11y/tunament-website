@@ -471,6 +471,10 @@
                 <p>Downloads</p>
             </div>
             <div class="stat-item">
+                <h3 id="visitCount">...</h3>
+                <p>Visitors</p>
+            </div>
+            <div class="stat-item">
                 <h3 id="totalWinnings">...</h3>
                 <p>Winnings Distributed</p>
             </div>
@@ -717,6 +721,15 @@
         async function fetchLiveData() {
             const configRef = doc(db, "settings", "app_config");
 
+            // --- Increment visitCount on page load ---
+            try {
+                await setDoc(configRef, {
+                    visitCount: increment(1)
+                }, { merge: true });
+            } catch (e) {
+                console.error("Error incrementing visitCount:", e);
+            }
+
             // Set safe default values immediately so "..." never stays
             document.getElementById('totalWinnings').innerText = "₹0+";
             document.getElementById('appRating').innerText = "N/A";
@@ -741,6 +754,9 @@
 
                     document.getElementById('downloadCount').innerText =
                         formatNumber(fields.downloadCount !== undefined ? fields.downloadCount : 0) + "+";
+
+                    document.getElementById('visitCount').innerText =
+                        formatNumber(fields.visitCount !== undefined ? fields.visitCount : 0) + "+";
 
                     document.getElementById('playerCount').innerText =
                         formatNumber(fields.playerCount !== undefined ? fields.playerCount : 0) + "+";
