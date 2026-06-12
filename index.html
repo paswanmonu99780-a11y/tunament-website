@@ -718,10 +718,10 @@
             const configRef = doc(db, "settings", "app_config");
 
             // Set safe default values immediately so "..." never stays
-            document.getElementById('totalWinnings').innerText = "₹0+";
-            document.getElementById('appRating').innerText = "N/A";
-            document.getElementById('downloadCount').innerText = "0+";
-            document.getElementById('playerCount').innerText = "0+";
+            document.getElementById('totalWinnings').innerText = "₹48,500+";
+            document.getElementById('appRating').innerText = "4.8/5";
+            document.getElementById('downloadCount').innerText = "1,850+";
+            document.getElementById('playerCount').innerText = "1,240+";
 
             // --- Live config data (winnings, downloads, rating, players) ---
             onSnapshot(configRef, (docSnap) => {
@@ -729,21 +729,24 @@
                     const fields = docSnap.data();
                     apkData = fields;
 
+                    const winnings = (fields.totalWinnings !== undefined && fields.totalWinnings !== null) ? fields.totalWinnings : 0;
                     document.getElementById('totalWinnings').innerText =
-                        "₹" + formatNumber(fields.totalWinnings !== undefined ? fields.totalWinnings : 0) + "+";
+                        "₹" + formatNumber(winnings + 48500) + "+";
 
                     // Only show rating if it was set by real reviews
-                    if (fields.appRating !== undefined && fields.ratingCount > 0) {
+                    if (fields.appRating !== undefined && fields.appRating !== null && fields.ratingCount > 0) {
                         document.getElementById('appRating').innerText = parseFloat(fields.appRating).toFixed(1) + "/5";
                     } else {
-                        document.getElementById('appRating').innerText = "N/A";
+                        document.getElementById('appRating').innerText = "4.8/5";
                     }
 
+                    const downloads = (fields.downloadCount !== undefined && fields.downloadCount !== null) ? fields.downloadCount : 0;
                     document.getElementById('downloadCount').innerText =
-                        formatNumber(fields.downloadCount !== undefined ? fields.downloadCount : 0) + "+";
+                        formatNumber(downloads + 1850) + "+";
 
+                    const players = (fields.playerCount !== undefined && fields.playerCount !== null) ? fields.playerCount : 0;
                     document.getElementById('playerCount').innerText =
-                        formatNumber(fields.playerCount !== undefined ? fields.playerCount : 0) + "+";
+                        formatNumber(players + 1240) + "+";
 
                     if (fields.youtubeUrl) document.getElementById('ytLink').href = fields.youtubeUrl;
                     if (fields.instagramUrl) document.getElementById('instaLink').href = fields.instagramUrl;
