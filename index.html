@@ -703,11 +703,11 @@
         async function fetchLiveData() {
             const configRef = doc(db, "settings", "app_config");
 
-            // Set safe default values immediately so "..." never stays
-            document.getElementById('totalWinnings').innerText = "₹48,500+";
-            document.getElementById('appRating').innerText = "4.8/5";
-            document.getElementById('downloadCount').innerText = "1,850+";
-            document.getElementById('visitorCount').innerText = "1,240+";
+            // Set loading defaults
+            document.getElementById('totalWinnings').innerText = "Loading...";
+            document.getElementById('appRating').innerText = "Loading...";
+            document.getElementById('downloadCount').innerText = "Loading...";
+            document.getElementById('visitorCount').innerText = "Loading...";
 
             // Track unique visitor
             if (!localStorage.getItem('arenabattletv_visitor')) {
@@ -730,15 +730,15 @@
 
                     const winnings = (fields.totalWinnings !== undefined && fields.totalWinnings !== null) ? fields.totalWinnings : 0;
                     document.getElementById('totalWinnings').innerText =
-                        "₹" + formatNumber(winnings + 48500) + "+";
+                        "\u20b9" + formatNumber(winnings) + "+";
 
                     const downloads = (fields.downloadCount !== undefined && fields.downloadCount !== null) ? fields.downloadCount : 0;
                     document.getElementById('downloadCount').innerText =
-                        formatNumber(downloads + 1850) + "+";
+                        formatNumber(downloads) + "+";
 
                     const visitors = (fields.visitorCount !== undefined && fields.visitorCount !== null) ? fields.visitorCount : 0;
                     document.getElementById('visitorCount').innerText =
-                        formatNumber(visitors + 1240) + "+";
+                        formatNumber(visitors) + "+";
 
                     if (fields.youtubeUrl) document.getElementById('ytLink').href = fields.youtubeUrl;
                     if (fields.instagramUrl) document.getElementById('instaLink').href = fields.instagramUrl;
