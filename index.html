@@ -463,10 +463,6 @@
 
         <div class="stats">
             <div class="stat-item">
-                <h3 id="visitorCount">...</h3>
-                <p>Visits</p>
-            </div>
-            <div class="stat-item">
                 <h3 id="downloadCount">...</h3>
                 <p>Downloads</p>
             </div>
@@ -720,21 +716,7 @@
             document.getElementById('totalWinnings').innerText = "₹0+";
             document.getElementById('appRating').innerText = "N/A";
             document.getElementById('downloadCount').innerText = "0+";
-            document.getElementById('visitorCount').innerText = "0+";
             document.getElementById('visitCount').innerText = "0+";
-
-            // Track unique visitor
-            if (!localStorage.getItem('arenabattletv_visitor')) {
-                const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-                localStorage.setItem('arenabattletv_visitor', uniqueId);
-                try {
-                    await setDoc(configRef, {
-                        visitorCount: increment(1)
-                    }, { merge: true });
-                } catch (e) {
-                    console.error("Error updating visitor count:", e);
-                }
-            }
 
             // --- Live config data (winnings, downloads, visitors) ---
             onSnapshot(configRef, (docSnap) => {
@@ -749,10 +731,6 @@
                     const downloads = (fields.downloadCount !== undefined && fields.downloadCount !== null) ? fields.downloadCount : 0;
                     document.getElementById('downloadCount').innerText =
                         formatNumber(downloads) + "+";
-
-                    const visitors = (fields.visitorCount !== undefined && fields.visitorCount !== null) ? fields.visitorCount : 0;
-                    document.getElementById('visitorCount').innerText =
-                        formatNumber(visitors) + "+";
 
                     const visits = (fields.visitCount !== undefined && fields.visitCount !== null) ? fields.visitCount : 0;
                     document.getElementById('visitCount').innerText =
