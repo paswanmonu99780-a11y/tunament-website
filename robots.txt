@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://arenabattletv.github.io/tunament-website/sitemap.xml
